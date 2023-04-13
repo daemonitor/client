@@ -1,10 +1,10 @@
-import pm2 from "pm2"
-import os from "os"
-import dotenv from "dotenv"
+import * as pm2 from "pm2"
+import { hostname, networkInterfaces } from "os"
+import * as dotenv from "dotenv"
 
 dotenv.config()
 
-const hostname = os.hostname()
+const myHostname = hostname()
 const machineId = process.env.MACHINE_ID || "unknown"
 
 const apiBaseUrl = process.env.API_BASE_URL === "production" ? "http://app.daemonitor.com/api" : "http://localhost:5678/api"
@@ -17,13 +17,15 @@ pm2.connect(function (err) {
     }
 
     setInterval(() => {
-        const ifaces = os.networkInterfaces()
-        let addrs = {}
-        for (let [key, value] of Object.entries(ifaces)) {
-            let found = value.find(port => (port.family === "IPv4") && (port.internal !== true))
-            if (found) {
-                let {address, netmask, mac} = found
-                addrs[key] = {address, netmask, mac}
+        const interfaces = networkInterfaces()
+        let addresses: { [key: string]: { address: string, netmask: string, mac: string } } = {}
+        for (let [key, value] of Object.entries(interfaces)) {
+            if (value) {
+                let found = value.find(port => ( port.family === "IPv4" ) && ( port.internal !== true ))
+                if (found) {
+                    let {address, netmask, mac} = found
+                    addresses[key] = {address, netmask, mac}
+                }
             }
         }
 
@@ -32,19 +34,19 @@ pm2.connect(function (err) {
                     for (const p of list) {
                         let {
                             pid, name, pm_id, monit,
-                            exit_code,
-                            prev_restart_delay,
-                            versioning,
-                            axm_dynamic,
-                            axm_actions,
-                            merge_logs,
-                            vizion,
-                            instance_var,
-                            pmx,
-                            automation,
-                            treekill,
-                            windowsHide,
-                            kill_retry_time
+                            // exit_code,
+                            // prev_restart_delay,
+                            // versioning,
+                            // axm_dynamic,
+                            // axm_actions,
+                            // merge_logs,
+                            // vizion,
+                            // instance_var,
+                            // pmx,
+                            // automation,
+                            // treekill,
+                            // windowsHide,
+                            // kill_retry_time
                         } = p
 
                         let {
@@ -60,12 +62,12 @@ pm2.connect(function (err) {
                             autorestart,
                             status,
                             pm_uptime
-                        } = p.pm2_env
+                        } = p.pm2_env as any
 
                         let res2 = {
                             unique_id,
                             data: {
-                                updated: (new Date()).getTime(),
+                                updated: ( new Date() ).getTime(),
                                 machineId,
                                 created_at,
                                 unstable_restarts,
@@ -84,21 +86,21 @@ pm2.connect(function (err) {
                                 autorestart,
                                 status,
                                 pm_uptime,
-                                hostname,
-                                addrs
+                                hostname: myHostname,
+                                addrs: addresses
                             }
                         }
-
-                        console.log(apiURL, JSON.stringify(res2))
 
                         await fetch(apiURL, {
                             method: "PUT",
                             body: JSON.stringify(res2)
                         })
-                            .then(async (val) => val.json())
+                            .then(async (val) =>{
+                                return await val.json()
+                            })
                             .then((response) => {
                                 if (response.success) {
-                                    console.log("success...")
+                                    // console.log("success...")
                                 } else {
                                     console.log("error...", response)
                                 }

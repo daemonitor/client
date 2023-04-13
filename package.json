@@ -2,13 +2,17 @@
   "name": "daemonitor-client",
   "version": "1.0.0",
   "description": "",
-  "main": "daemonitor-client.js",
+  "main": "daemonitor-client.ts",
   "scripts": {
+    "run": "ts-node-esm daemonitor-client.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "packageManager": "pnpm@8.2.0",
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "ts-node": "^10.9.1",
+    "dotenv": "^16.0.3",
     "node-machine-id": "^1.1.12",
     "string-to-color": "^2.2.2"
   }
