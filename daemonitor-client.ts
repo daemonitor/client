@@ -1,6 +1,7 @@
 import * as pm2 from "pm2"
 import { hostname, networkInterfaces } from "os"
 import * as dotenv from "dotenv"
+import { $fetch } from 'ohmyfetch'
 
 dotenv.config()
 
@@ -91,7 +92,7 @@ pm2.connect(function (err) {
                             }
                         }
 
-                        await fetch(apiURL, {
+                        await $fetch(apiURL, {
                             method: "PUT",
                             body: JSON.stringify(res2)
                         })

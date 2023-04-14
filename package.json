@@ -11,9 +11,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ts-node": "^10.9.1",
     "dotenv": "^16.0.3",
     "node-machine-id": "^1.1.12",
-    "string-to-color": "^2.2.2"
+    "ohmyfetch": "^0.4.21",
+    "pm2": "^5.1.0",
+    "string-to-color": "^2.2.2",
+    "ts-node": "^10.9.1"
   }
 }
