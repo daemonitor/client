@@ -66,8 +66,8 @@ pm2.connect(function (err) {
 
                         let res2 = {
                             unique_id,
+                            systemKey,
                             data: {
-                                systemKey,
                                 updated: ( new Date() ).getTime(),
                                 created_at,
                                 unstable_restarts,
