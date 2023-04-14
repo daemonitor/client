@@ -5,7 +5,7 @@ import * as dotenv from "dotenv"
 dotenv.config()
 
 const myHostname = hostname()
-const machineId = process.env.MACHINE_ID || "unknown"
+const systemKey = process.env.SYSTEM_KEY || "unknown"
 
 const apiBaseUrl = process.env.API_BASE_URL === "production" ? "http://app.daemonitor.com/api" : "http://localhost:5678/api"
 const apiURL = `${apiBaseUrl}/clientstate/update`
@@ -67,8 +67,8 @@ pm2.connect(function (err) {
                         let res2 = {
                             unique_id,
                             data: {
+                                systemKey,
                                 updated: ( new Date() ).getTime(),
-                                machineId,
                                 created_at,
                                 unstable_restarts,
                                 restarts: restart_time,
