@@ -1,7 +1,7 @@
 import * as pm2 from "pm2"
 import { hostname, networkInterfaces } from "os"
 import * as dotenv from "dotenv"
-import { $fetch } from 'ohmyfetch'
+import { $fetch } from "ohmyfetch"
 
 dotenv.config()
 
@@ -96,9 +96,6 @@ pm2.connect(function (err) {
                             method: "PUT",
                             body: JSON.stringify(res2)
                         })
-                            .then(async (val) =>{
-                                return await val.json()
-                            })
                             .then((response) => {
                                 if (response.success) {
                                     // console.log("success...")
