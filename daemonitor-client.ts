@@ -7,8 +7,7 @@ dotenv.config()
 
 const myHostname = hostname()
 const systemKey = process.env.SYSTEM_KEY || "unknown"
-
-const apiBaseUrl = process.env.API_BASE_URL === "production" ? "http://app.daemonitor.com/api" : "http://localhost:5678/api"
+const apiBaseUrl = process.env.API_BASE_URL || "http://app.daemonitor.com/api"
 const apiURL = `${apiBaseUrl}/clientstate/update`
 
 console.log(`Daemonitor client starting up for ${myHostname} with key ${systemKey}, using API at ${apiURL}`)
