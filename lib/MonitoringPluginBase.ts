@@ -20,7 +20,7 @@ abstract class MonitoringPluginBase {
 
     public async send(data: any, unique_id?: string): Promise<void> {
         for (const apiConnection of PluginManager.API_CONNECTIONS) {
-            await apiConnection.sendData({name: this.instanceName, data}, this.name, unique_id || this.uniqueId)
+            await apiConnection.sendData({name: this.instanceName, ...data}, this.name, unique_id || this.uniqueId)
         }
     }
 
@@ -31,6 +31,10 @@ abstract class MonitoringPluginBase {
     abstract refresh(): Promise<void>;
 
     abstract teardown(): Promise<void>;
+
+    getName() {
+        return this.name
+    }
 }
 
 export default MonitoringPluginBase

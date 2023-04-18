@@ -9,7 +9,7 @@ class ConfigProvider {
 
     static async get(key: string): Promise<any> {
         if (!ConfigProvider.config[key]) {
-            throw new Error(`Config key ${key} not found`)
+            return null
         }
         return ConfigProvider.config[key]
     }
