@@ -15,7 +15,7 @@ import MonitoringPluginBase from "~/lib/MonitoringPluginBase"
 
 class OSPlugin extends MonitoringPluginBase {
     constructor() {
-        super("os")
+        super("os", "OS", "OS Monitoring Plugin")
     }
 
     async setup(): Promise<void> {

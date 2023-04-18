@@ -3,7 +3,7 @@ import MonitoringPluginBase from "~/lib/MonitoringPluginBase"
 
 class PM2Plugin extends MonitoringPluginBase {
     constructor() {
-        super("pm2")
+        super("pm2", "PM2", "PM2 Monitoring Plugin")
     }
 
     async setup(): Promise<void> {
