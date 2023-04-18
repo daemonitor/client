@@ -1,7 +1,19 @@
 {
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
   "compilerOptions": {
-    "lib": ["esnext", "dom"],
-    "module": "commonjs",
-    "target": "esnext"
-  }
+    "moduleResolution": "node",
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "target": "esnext",
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["*"],
+    }
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules"]
 }
