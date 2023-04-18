@@ -1,121 +1,54 @@
-import * as pm2 from "pm2"
-import { hostname, networkInterfaces } from "os"
 import * as dotenv from "dotenv"
-import { $fetch } from "ohmyfetch"
+import { hostname } from "os"
+import ConfigProvider from "./lib/providers/ConfigProvider"
+import PluginManager from "./lib/PluginManager"
+import RestApiConnector from "./lib/connectors/RestApiConnector"
 
 dotenv.config()
 
 const myHostname = hostname()
 const systemKey = process.env.SYSTEM_KEY || "unknown"
 const apiBaseUrl = process.env.API_BASE_URL || "http://app.daemonitor.com/api"
-const apiURL = `${apiBaseUrl}/clientstate/update`
+const apiUrl = `${apiBaseUrl}/clientstate/update`
 
-console.log(`Daemonitor client starting up for ${myHostname} with key ${systemKey}, using API at ${apiBaseUrl}`)
-pm2.connect(function (err) {
-    if (err) {
-        console.error(err)
-        process.exit(2)
+console.log(`Starting for ${myHostname} with key ${systemKey}, using API at ${apiBaseUrl}`);
+
+( async () => {
+
+    if (!systemKey) {
+        console.error("No system key provided, exiting.")
+        process.exit(1)
     }
 
-    setInterval(() => {
-        const interfaces = networkInterfaces()
-        let addresses: { [key: string]: { address: string, netmask: string, mac: string } } = {}
-        for (let [key, value] of Object.entries(interfaces)) {
-            if (value) {
-                let found = value.find(port => ( port.family === "IPv4" ) && ( port.internal !== true ))
-                if (found) {
-                    let {address, netmask, mac} = found
-                    addresses[key] = {address, netmask, mac}
-                }
-            }
-        }
+    if (!apiBaseUrl) {
+        console.error("No API base URL provided, exiting.")
+        process.exit(1)
+    }
 
-        pm2.list(async (err, list) => {
-                if (!err) {
-                    for (const p of list) {
-                        let {
-                            pid, name, pm_id, monit,
-                            // exit_code,
-                            // prev_restart_delay,
-                            // versioning,
-                            // axm_dynamic,
-                            // axm_actions,
-                            // merge_logs,
-                            // vizion,
-                            // instance_var,
-                            // pmx,
-                            // automation,
-                            // treekill,
-                            // windowsHide,
-                            // kill_retry_time
-                        } = p
+    // load the plugins configuration
+    const pluginsConfig = await ConfigProvider.get("plugins")
+    if (!pluginsConfig) {
+        console.error("No plugins configured, exiting.")
+        process.exit(1)
+    }
 
-                        let {
-                            username,
-                            watch,
-                            axm_options,
-                            axm_monitor,
-                            node_version,
-                            unique_id,
-                            restart_time,
-                            created_at,
-                            unstable_restarts,
-                            autorestart,
-                            status,
-                            pm_uptime
-                        } = p.pm2_env as any
+    // create the API connection
+    const apiConnection = new RestApiConnector(apiUrl, systemKey)
 
-                        let res2 = {
-                            unique_id,
-                            systemKey,
-                            data: {
-                                updated: ( new Date() ).getTime(),
-                                created_at,
-                                unstable_restarts,
-                                restarts: restart_time,
-                                pid,
-                                name,
-                                pm_id,
-                                monit,
-                                username,
-                                watch,
-                                axm_options,
-                                axm_monitor,
-                                node_version,
-                                unique_id,
-                                restart_time,
-                                autorestart,
-                                status,
-                                pm_uptime,
-                                hostname: myHostname,
-                                addrs: addresses
-                            }
-                        }
+    // create and initialize the plugin manager
+    const pluginManager = new PluginManager()
+    await pluginManager.initialize()
 
-                        await $fetch(apiURL, {
-                            method: "PUT",
-                            body: JSON.stringify(res2)
-                        })
-                            .then((response) => {
-                                if (response.success) {
-                                    // console.log("success...")
-                                } else {
-                                    console.log("error...", response)
-                                }
-                            })
-                            .catch((err) => {
-                                console.log(err)
-                            })
-                    }
-                } else {
-                    console.error(err)
-                }
-            }
-        )
-    }, 5000)
+    // inject the API connection into the plugin manager
+    await pluginManager.addApiConnection(apiConnection)
 
-// pm2.restart('api', (err, proc) => {
-//     Disconnects from PM2
-// pm2.disconnect()
-// })
-})
+    await pluginManager.monitorAll()
+
+
+    // listen for interrupts and shutdown gracefully
+    process.on("SIGINT", async () => {
+        console.log("SIGINT received, shutting down...")
+        await pluginManager.teardownAll()
+        process.exit(0)
+    })
+} )()
