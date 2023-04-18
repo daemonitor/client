@@ -1,6 +1,7 @@
 export default {
     "plugins": [
-        "pm2"
+        "pm2",
+        "os"
     ],
     "pm2": {
         "name": "pm2",
