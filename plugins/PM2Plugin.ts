@@ -17,7 +17,6 @@ class PM2Plugin extends MonitoringPluginBase {
                         resolve()
                     }
                 })
-
             } catch (e) {
                 console.error("ERROR", e)
                 reject(e)
@@ -80,7 +79,6 @@ class PM2Plugin extends MonitoringPluginBase {
                             autorestart,
                             status,
                             pm_uptime,
-                            addrs: addresses
                         }
                         await this.send(payload, `${unique_id}-${pm_id}`)
                     }
