@@ -1,8 +1,8 @@
 module.exports = {
     apps: [{
         name: "daemonitor-client",
-        interpreter: "ts-node",
-        script: "./daemonitor-client.ts",
+        interpreter: "none",
+        script: "ts-node ./daemonitor-client.ts",
         watch: true,
     }]
 }
