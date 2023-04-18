@@ -1,4 +1,16 @@
-import { networkInterfaces } from "os"
+import {
+    arch,
+    cpus,
+    freemem,
+    hostname,
+    loadavg,
+    networkInterfaces,
+    platform,
+    release,
+    totalmem,
+    type,
+    uptime
+} from "os"
 import MonitoringPluginBase from "~/lib/MonitoringPluginBase"
 
 class OSPlugin extends MonitoringPluginBase {
@@ -7,22 +19,8 @@ class OSPlugin extends MonitoringPluginBase {
     }
 
     async setup(): Promise<void> {
-        return new Promise((resolve, reject) => {
-            try {
-                pm2.connect(async (err) => {
-                    if (err) {
-                        console.error(err)
-                        reject(err)
-                    } else {
-                        resolve()
-                    }
-                })
-
-            } catch (e) {
-                console.error("ERROR", e)
-                reject(e)
-            }
-        })
+        // no setup required
+        return Promise.resolve()
     }
 
     async refresh(): Promise<void> {
@@ -38,24 +36,18 @@ class OSPlugin extends MonitoringPluginBase {
             }
         }
 
-        const {totalmem, freemem, loadavg, uptime} = os
-        const {hostname} = os
-        const {platform, release, type, arch} = os
-        const {cpus} = os
-
-
         await this.send({
             addresses,
-            totalmem,
-            freemem,
-            loadavg,
-            uptime,
-            hostname,
-            platform,
-            release,
-            type,
-            arch,
-            cpus
+            totalmem: totalmem(),
+            freemem: freemem(),
+            loadavg: loadavg(),
+            uptime: uptime(),
+            hostname: hostname(),
+            platform: platform(),
+            release: release(),
+            type: type(),
+            arch: arch(),
+            cpus: cpus()
         })
 
     }
@@ -69,4 +61,4 @@ class OSPlugin extends MonitoringPluginBase {
     }
 }
 
-export default PM2Plugin
+export default OSPlugin
