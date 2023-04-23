@@ -1,24 +1,33 @@
 {
-  "name": "daemonitor-client",
+  "name": "@daemonitor/client",
   "version": "1.0.0",
   "description": "",
-  "main": "daemonitor-client.ts",
+  "main": "index.ts",
+  "repository": {
+    "url": "git+https://github.com/daemonitor/plugins.git",
+    "type": "git"
+  },
   "scripts": {
     "run": "ts-node-esm daemonitor-client.ts",
+    "updateLink": "pnpm link",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "type": "module",
+  "types": "types/index.d.ts",
   "packageManager": "pnpm@8.2.0",
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@daemonitor/common": "file:../common",
+    "@daemonitor/plugins": "file:../plugins",
     "dotenv": "^16.0.3",
+    "ewelink-api": "^3.1.1",
     "node-machine-id": "^1.1.12",
+    "nodemon": "^2.0.22",
     "ohmyfetch": "^0.4.21",
-    "pm2": "^5.1.0",
+    "pm2": "^5.3.0",
     "string-to-color": "^2.2.2",
-    "ts-node": "^10.9.1"
-  },
-  "devDependencies": {
+    "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0"
   }
 }
