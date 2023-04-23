@@ -1,19 +1,36 @@
 {
   "ts-node": {
-    "require": ["tsconfig-paths/register"]
+
+    "require": [
+      "tsconfig-paths/register"
+    ]
   },
   "compilerOptions": {
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
     "lib": [
       "esnext",
       "dom"
     ],
     "target": "esnext",
+    "module": "esnext",
     "baseUrl": ".",
     "paths": {
-      "~/*": ["*"],
-    }
+      "~/*": [
+        "*"
+      ]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./node_modules/@daemonitor/common/types",
+      "./node_modules/@daemonitor/plugins/types",
+      "./types"
+    ]
   },
-  "include": ["**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
