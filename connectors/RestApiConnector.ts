@@ -2,8 +2,16 @@
 import { $fetch } from "ohmyfetch"
 import { IConnector } from "@daemonitor/common"
 
-export default class RestApiConnector implements IConnector {
-    constructor(private apiUrl: string, private systemKey: string) {
+export class RestApiConnector implements IConnector {
+
+    apiUrl: string
+    systemKey: string
+
+    constructor({apiUrl, systemKey}: { apiUrl: string, systemKey: string }) {
+        this.apiUrl = apiUrl
+        this.systemKey = systemKey
+
+        console.log("RestApiConnector initialized.", apiUrl, systemKey)
     }
 
     async sendData(data: any, type: string, uniqueId: string): Promise<void> {
