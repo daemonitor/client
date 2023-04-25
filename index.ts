@@ -1,6 +1,1 @@
-import RestApiConnector from "./connectors/RestApiConnector.js"
-
-
-export {
-    RestApiConnector
-}
+export { DaemonitorClient } from "./lib/DaemonitorClient.js"
