@@ -1,24 +1,32 @@
 {
   "ts-node": {
-
     "require": [
       "tsconfig-paths/register"
     ]
   },
+  "skipIgnore": true,
   "compilerOptions": {
-    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "module": "esnext",
+    "target": "ESNext",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "lib": [
       "esnext",
       "dom"
     ],
-    "target": "esnext",
-    "module": "esnext",
     "baseUrl": ".",
     "paths": {
       "~/*": [
         "*"
-      ]
+      ],
+      "@daemonitor/common/*": [
+        "node_modules/@daemonitor/common/*",
+      ],
+      "@daemonitor/plugins/*": [
+        "node_modules/@daemonitor/plugins/*",
+      ],
     },
     "typeRoots": [
       "./node_modules/@types",
@@ -28,7 +36,10 @@
     ]
   },
   "include": [
-    "**/*.ts"
+    "**/*.ts",
+    "node_modules/@daemonitor/common/index.ts",
+    "node_modules/@daemonitor/plugins/index.ts"
+
   ],
   "exclude": [
     "node_modules"
