@@ -1,4 +1,4 @@
-import RestApiConnector from "./connectors/RestApiConnector"
+import RestApiConnector from "./connectors/RestApiConnector.js"
 
 
 export {
