@@ -1,8 +1,17 @@
-import RestApiConnector from "../connectors/RestApiConnector.js"
 import { PluginManager } from "@daemonitor/plugins"
 
+import Connectors from "../connectors/index.js"
+
+interface DaemonitorClientConfig {
+    plugins: any[]
+    connectors: any[]
+}
+
 export class DaemonitorClient {
-    constructor(apiBaseUrl, apiUrl, systemKey, config) {
+
+    connectors: any[] = []
+
+    constructor(apiBaseUrl, apiUrl, systemKey, config: DaemonitorClientConfig) {
 
         ( async () => {
 
@@ -23,18 +32,31 @@ export class DaemonitorClient {
                 process.exit(1)
             }
 
-            // create the API connection
-            const apiConnection = new RestApiConnector(apiUrl, systemKey)
-
             // create and initialize the plugin manager
             const pluginManager = new PluginManager(config.plugins)
             await pluginManager.initialize()
 
+
+            // initialize the connectors
+            for (const connectorItem of config.connectors) {
+                if (!Connectors[connectorItem.type]) {
+                    console.error(`Connector "${connectorItem.type}" not found.`)
+                } else {
+                    const connectorClass = Connectors[connectorItem.type]
+                    const connector = new connectorClass(connectorItem.config)
+                    this.connectors.push(connector)
+                }
+            }
+
+            // inject the connectors into the plugin manager
+            for (const connector of this.connectors) {
+                await pluginManager.addConnector(connector)
+            }
+
+
             // inject the API connection into the plugin manager
-            await pluginManager.addApiConnection(apiConnection)
 
             await pluginManager.monitorAll()
-
 
             // listen for interrupts and shutdown gracefully
             process.on("SIGINT", async () => {
