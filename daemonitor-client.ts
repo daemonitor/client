@@ -1,9 +1,11 @@
 import * as dotenv from "dotenv"
 import { hostname } from "os"
 import { PluginManager } from "@daemonitor/plugins"
-import RestApiConnector  from "./connectors/RestApiConnector.js"
+import RestApiConnector from "./connectors/RestApiConnector.js"
 
-import config from "./config.js"
+import {readFileSync} from "fs"
+
+const config = JSON.parse(readFileSync("config.json").toString())
 
 dotenv.config()
 
