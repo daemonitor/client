@@ -37,7 +37,7 @@
       {
         "name": "CITYRFP STAGE",
         "url": "https://stage.cityrfp.com",
-        "": [
+        "unexpectedStrings": [
           "Bad Gateway"
         ]
       }
