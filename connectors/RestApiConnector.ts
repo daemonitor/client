@@ -2,7 +2,7 @@
 import { $fetch } from "ohmyfetch"
 import { IConnector } from "@daemonitor/common"
 
-class RestApiConnector implements IConnector {
+export default class RestApiConnector implements IConnector {
     constructor(private apiUrl: string, private systemKey: string) {
     }
 
@@ -27,4 +27,3 @@ class RestApiConnector implements IConnector {
     }
 }
 
-export default RestApiConnector
