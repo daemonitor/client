@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv"
 import { hostname } from "os"
 import { PluginManager } from "@daemonitor/plugins"
-import { AppConfigProvider } from "@daemonitor/common"
-import RestApiConnector from "~/connectors/RestApiConnector.js"
+import RestApiConnector  from "./connectors/RestApiConnector.js"
+
+import config from "./config.js"
 
 dotenv.config()
 
@@ -26,7 +27,7 @@ console.log(`Starting for ${myHostname} with key ${systemKey}, using API at ${ap
     }
 
     // load the plugins configuration
-    const pluginsConfig = await AppConfigProvider.get("plugins")
+    const pluginsConfig = config.plugins
     if (!pluginsConfig) {
         console.error("No plugins configured, exiting.")
         process.exit(1)
@@ -36,7 +37,7 @@ console.log(`Starting for ${myHostname} with key ${systemKey}, using API at ${ap
     const apiConnection = new RestApiConnector(apiUrl, systemKey)
 
     // create and initialize the plugin manager
-    const pluginManager = new PluginManager()
+    const pluginManager = new PluginManager(config.plugins)
     await pluginManager.initialize()
 
     // inject the API connection into the plugin manager
