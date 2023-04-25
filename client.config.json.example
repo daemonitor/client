@@ -5,7 +5,7 @@
       "name": "REST API",
       "config": {
         "apiUrl": "http://localhost:5678/api/clientstate/update",
-        "systemKey": "bGdeP1F7HyOAGjjFIzrZ6Y4UqXfz6ahxY1PJEWCHGDk="
+        "systemKey": "YOUR SYSTEM KEY HERE"
       }
     }
   ],
