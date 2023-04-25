@@ -1,0 +1,11 @@
+[Unit]
+Description=Daemonitor Client
+After=multi-user.target
+
+[Service]
+WorkingDirectory=/etc/daemonitor
+ExecStart=node --experimental-modules /usr/bin/daemonitor-client
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
