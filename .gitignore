@@ -4,4 +4,5 @@ client.config.json
 .idea
 .env
 dist
+.DS_Store
 
