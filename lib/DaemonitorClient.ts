@@ -2,6 +2,10 @@ import { PluginManager } from "@daemonitor/plugins"
 
 import Connectors from "../connectors/index.js"
 
+import * as dotenv from "dotenv"
+
+dotenv.config()
+
 interface DaemonitorClientConfig {
     plugins: any[]
     connectors: any[]
@@ -38,6 +42,20 @@ export class DaemonitorClient {
 
 
             // initialize the connectors
+            if (!config.connectors) {
+                if (!process.env.SYSTEM_KEY) {
+                    console.error("No SYSTEM_KEY environment variable found, exiting.")
+                    process.exit(1)
+                }
+                config.connectors = [{
+                    "type": "rest-api",
+                    "name": "REST API",
+                    "config": {
+                        "apiUrl": "https://www.daemonitor.com/api/clientstate/update",
+                        "systemKey": process.env.SYSTEM_KEY
+                    }
+                }]
+            }
             for (const connectorItem of config.connectors) {
                 if (!Connectors[connectorItem.type]) {
                     console.error(`Connector "${connectorItem.type}" not found.`)
