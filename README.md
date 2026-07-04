@@ -125,6 +125,45 @@ The EWeLink plugin provides information about EWeLink devices.
 | region | EWeLink region. | `us` |
 | devices | An array of device IDs to monitor. | `[]` |
 
+### Cloudflare
+
+The Cloudflare plugin receives push updates from a Cloudflare Worker deployed in your Cloudflare account.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| reportingKey | Unique reporting key for authenticating Cloudflare Worker updates. | |
+| refreshInterval | Interval to check for stale data in milliseconds. | `60000` |
+| maxDataAge | Maximum age of data before considering it stale in milliseconds. | `300000` (5 minutes) |
+
+#### Push-Based Monitoring with Cloudflare Workers
+
+Instead of polling the Cloudflare API directly, this plugin uses a push-based approach:
+
+1. You deploy a Cloudflare Worker in your own Cloudflare account
+2. The worker collects data about your deployments and zones on a schedule (e.g., every 5 minutes)
+3. The worker pushes this data to Daemonitor using your unique reporting key
+4. The Cloudflare plugin receives and displays this data in real-time
+
+This approach provides several advantages:
+- **Security**: Your Cloudflare API tokens remain within your Cloudflare account
+- **Efficiency**: Eliminates polling and reduces network traffic
+- **Customization**: You can modify what data is collected and reported
+- **Reliability**: Worker runs on Cloudflare's edge network
+
+#### Setting up the Cloudflare Worker
+
+We provide a ready-to-deploy Cloudflare Worker template in the `/plugins/examples/cloudflare-worker` directory. 
+
+Follow these steps to set it up:
+
+1. Get your Daemonitor reporting key from your account settings
+2. Deploy the worker to your Cloudflare account (see README in the example directory)
+3. Configure the worker with your Cloudflare API token and Daemonitor reporting key
+4. Set up a CRON trigger to run the worker on a schedule (e.g., every 5 minutes)
+5. Configure the plugin in your client.config.json with your reporting key
+
+For detailed instructions, see the README in the `/plugins/examples/cloudflare-worker` directory.
+
 
 ## Connectors
 

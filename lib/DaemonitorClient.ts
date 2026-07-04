@@ -1,87 +1,107 @@
 import { PluginManager } from "@daemonitor/plugins"
-
-import Connectors from "../connectors/index.js"
-
+import { createConnector } from "../connectors"
+import { IConnector } from "@daemonitor/common"
 import * as dotenv from "dotenv"
 
 dotenv.config()
 
-interface DaemonitorClientConfig {
-    plugins: any[]
-    connectors: any[]
+// Define the client configuration interface
+export interface DaemonitorClientConfig {
+  plugins: string[];
+  connectors?: Array<{
+    type: string;
+    name: string;
+    config: any;
+  }>;
+  apiBaseUrl?: string;
+  apiUrl?: string;
+  systemKey?: string;
 }
 
-export class DaemonitorClient {
+// Define the client instance interface
+export interface DaemonitorClientInstance {
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+}
 
-    connectors: any[] = []
-
-    constructor(apiBaseUrl, apiUrl, systemKey, config: DaemonitorClientConfig) {
-
-        ( async () => {
-
-            if (!systemKey) {
-                console.error("No system key provided, exiting.")
-                process.exit(1)
-            }
-
-            if (!apiBaseUrl) {
-                console.error("No API base URL provided, exiting.")
-                process.exit(1)
-            }
-
-            // load the plugins configuration
-            const pluginsConfig = config.plugins
-            if (!pluginsConfig) {
-                console.error("No plugins configured, exiting.")
-                process.exit(1)
-            }
-
-            // create and initialize the plugin manager
-            const pluginManager = new PluginManager(config.plugins)
-            await pluginManager.initialize()
-
-
-            // initialize the connectors
-            if (!config.connectors) {
-                if (!process.env.SYSTEM_KEY) {
-                    console.error("No SYSTEM_KEY environment variable found, exiting.")
-                    process.exit(1)
-                }
-                config.connectors = [{
-                    "type": "rest-api",
-                    "name": "REST API",
-                    "config": {
-                        "apiUrl": "https://www.daemonitor.com/api/clientstate/update",
-                        "systemKey": process.env.SYSTEM_KEY
-                    }
-                }]
-            }
-            for (const connectorItem of config.connectors) {
-                if (!Connectors[connectorItem.type]) {
-                    console.error(`Connector "${connectorItem.type}" not found.`)
-                } else {
-                    const connectorClass = Connectors[connectorItem.type]
-                    const connector = new connectorClass(connectorItem.config)
-                    this.connectors.push(connector)
-                }
-            }
-
-            // inject the connectors into the plugin manager
-            for (const connector of this.connectors) {
-                await pluginManager.addConnector(connector)
-            }
-
-
-            // inject the API connection into the plugin manager
-
-            await pluginManager.monitorAll()
-
-            // listen for interrupts and shutdown gracefully
-            process.on("SIGINT", async () => {
-                console.log("SIGINT received, shutting down...")
-                await pluginManager.teardownAll()
-                process.exit(0)
-            })
-        } )()
+// Factory function to create a daemonitor client
+export async function createDaemonitorClient(config: DaemonitorClientConfig): Promise<DaemonitorClientInstance> {
+  const connectors: IConnector[] = [];
+  let pluginManagerInstance: any;
+  
+  // Validate configuration
+  const systemKey = config.systemKey || process.env.SYSTEM_KEY;
+  if (!systemKey) {
+    throw new Error("No system key provided. Set SYSTEM_KEY environment variable or pass systemKey in config.");
+  }
+  
+  const apiBaseUrl = config.apiBaseUrl || process.env.API_BASE_URL;
+  if (!apiBaseUrl) {
+    throw new Error("No API base URL provided. Set API_BASE_URL environment variable or pass apiBaseUrl in config.");
+  }
+  
+  // Validate plugins configuration
+  if (!config.plugins || config.plugins.length === 0) {
+    throw new Error("No plugins configured.");
+  }
+  
+  // Initialize and start the client
+  async function startClient() {
+    try {
+      // Initialize the plugin manager with the FULL config so per-plugin
+      // config sections (config.docker, config.pm2, ...) are available to
+      // plugins via PluginConfigProvider — not just the plugins list.
+      pluginManagerInstance = PluginManager;
+      await pluginManagerInstance.initialize(config as Record<string, any>);
+      
+      // Set up default connector if none provided
+      if (!config.connectors || config.connectors.length === 0) {
+        config.connectors = [{
+          type: "rest-api",
+          name: "REST API",
+          config: {
+            apiUrl: config.apiUrl || `${apiBaseUrl}/api/clientstate/update`,
+            systemKey
+          }
+        }];
+      }
+      
+      // Create and add connectors
+      for (const connectorItem of config.connectors) {
+        const connector = createConnector(connectorItem.type, connectorItem.config);
+        if (connector) {
+          connectors.push(connector);
+          await pluginManagerInstance.addConnector(connector);
+        }
+      }
+      
+      // Start monitoring with all plugins
+      await pluginManagerInstance.monitorAll();
+      
+      // Set up graceful shutdown
+      process.on("SIGINT", async () => {
+        console.log("SIGINT received, shutting down...");
+        await pluginManagerInstance.teardownAll();
+        process.exit(0);
+      });
+      
+      console.log("Daemonitor client started successfully with plugins:", config.plugins.join(", "));
+    } catch (error) {
+      console.error("Failed to start Daemonitor client:", error);
+      throw error;
     }
+  }
+  
+  // Create the client instance
+  const clientInstance: DaemonitorClientInstance = {
+    start: startClient,
+    stop: async () => {
+      if (pluginManagerInstance) {
+        await pluginManagerInstance.teardownAll();
+        console.log("Daemonitor client stopped");
+      }
+    }
+  };
+  
+  return clientInstance;
 }
