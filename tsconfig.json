@@ -8,13 +8,16 @@
   "compilerOptions": {
     "outDir": "./dist",
     "sourceMap": true,
-    "module": "esnext",
+    "module": "ESNext",
     "target": "ESNext",
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "types": ["bun-types"],
     "lib": [
-      "esnext",
-      "dom"
+      "ESNext"
     ],
     "baseUrl": ".",
     "paths": {

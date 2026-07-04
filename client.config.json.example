@@ -4,7 +4,7 @@
       "type": "rest-api",
       "name": "REST API",
       "config": {
-        "apiUrl": "http://localhost:5678/api/clientstate/update",
+        "apiUrl": "http://localhost:3000/api/clientstate/update",
         "systemKey": "YOUR SYSTEM KEY HERE"
       }
     }
@@ -13,34 +13,84 @@
     "pm2",
     "os",
     "web",
-    "ewelink"
+    "ewelink",
+    "docker",
+    "lxc",
+    "mongodb",
+    "cloudflare"
   ],
   "ewelink": {
     "name": "ewelink",
     "uniqueId": "ewelink",
-    "refreshInterval": 10000
+    "refreshInterval": 10000,
+    "email": "your-ewelink-email@example.com",
+    "password": "your-ewelink-password",
+    "region": "us",
+    "devices": []
   },
   "pm2": {
     "name": "pm2",
     "uniqueId": "pm2",
-    "refreshInterval": 10000
+    "refreshInterval": 10000,
+    "processes": []
+  },
+  "docker": {
+    "name": "docker",
+    "uniqueId": "docker",
+    "refreshInterval": 60000,
+    "dockerBin": "docker",
+    "projects": [],
+    "exclude": []
+  },
+  "lxc": {
+    "name": "lxc",
+    "uniqueId": "lxc",
+    "refreshInterval": 60000,
+    "lxcBin": "lxc",
+    "instances": [],
+    "exclude": []
+  },
+  "mongodb": {
+    "name": "mongodb",
+    "uniqueId": "mongodb",
+    "refreshInterval": 30000,
+    "uri": "mongodb://localhost:27017",
+    "databases": []
+  },
+  "os": {
+    "name": "os",
+    "uniqueId": "os",
+    "refreshInterval": 30000
   },
   "web": {
+    "name": "web",
+    "uniqueId": "web",
+    "refreshInterval": 60000,
     "endpoints": [
       {
-        "name": "L422Y.COM",
-        "url": "https://l422y.com",
+        "name": "Example Website",
+        "url": "https://example.com",
         "expectedStrings": [
-          "l422y"
+          "Example Domain"
         ]
       },
       {
-        "name": "CITYRFP STAGE",
-        "url": "https://stage.cityrfp.com",
+        "name": "Another Website",
+        "url": "https://another-example.com",
         "unexpectedStrings": [
+          "Error",
           "Bad Gateway"
-        ]
+        ],
+        "expectedStatusCode": 200,
+        "timeout": 5000
       }
     ]
+  },
+  "cloudflare": {
+    "name": "Cloudflare Deployments",
+    "uniqueId": "cloudflare",
+    "refreshInterval": 60000,
+    "reportingKey": "your-daemonitor-cloudflare-reporting-key",
+    "maxDataAge": 300000
   }
 }
