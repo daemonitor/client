@@ -112,6 +112,36 @@ Endpoints can be configured with the following options:
 | unexpectedResponseTime | The unexpected response time. | `1000` |
 | expectedResponseSize | The expected response size. | `0` |
 | unexpectedResponseSize | The unexpected response size. | `0` |
+| origin | Optional direct-to-origin check (see below). | |
+
+#### Origin (two-tiered checks)
+
+For sites behind Cloudflare or another CDN, the public URL alone can't tell you the origin server is actually healthy — the CDN can keep serving cached content while the origin is down. Setting `origin` on an endpoint adds a second, direct-to-origin request alongside the public one; a failing origin surfaces as a warning even while the public site keeps serving fine.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| url | The address that actually reaches the origin — its own hostname or IP, e.g. `https://origin.example.com/`. | |
+| host | Overrides the `Host` header so the origin's vhost config routes the request as if it arrived on the public hostname, e.g. `www.example.com`. Equivalent to `curl -H "Host: ..."`. | |
+| headers | Extra headers to send with the origin request (e.g. a bypass secret some origins require for direct, non-CDN traffic). | `{}` |
+| query | Extra query params to append to the origin URL (e.g. `{ "cf": "1" }`, if that's what your origin/WAF checks for instead of a header). | `{}` |
+| insecure | Skip TLS certificate verification on the origin request. Set this when Cloudflare (or the CDN) terminates TLS for you, so the origin's own certificate is self-signed, internal, or intentionally left expired — the origin check would otherwise fail on the cert even though the server is healthy. | `false` |
+| timeout | Overrides the endpoint's own `timeout` for the origin request. | endpoint's `timeout` |
+| expectedStrings / unexpectedStrings / expectedStatusCode | Override the endpoint's own values for evaluating the origin response. | endpoint's values |
+
+Example — checking `www.archpaper.com` publicly, and directly against its origin (which only accepts direct traffic tagged with `?cf=1` and the public hostname in `Host`, and whose TLS cert isn't maintained because Cloudflare handles SSL):
+
+```json
+{
+  "name": "archpaper.com",
+  "url": "https://www.archpaper.com/",
+  "origin": {
+    "url": "https://origin.archpaper.com/",
+    "host": "www.archpaper.com",
+    "query": { "cf": "1" },
+    "insecure": true
+  }
+}
+```
 
 
 ### EWeLink
