@@ -17,7 +17,9 @@
     "docker",
     "lxc",
     "mongodb",
-    "cloudflare"
+    "cloudflare",
+    "wordpress",
+    "logwatch"
   ],
   "ewelink": {
     "name": "ewelink",
@@ -83,6 +85,24 @@
         ],
         "expectedStatusCode": 200,
         "timeout": 5000
+      },
+      {
+        "_comment": "Security example: unexpectedStrings doubles as an IOC list (injected-script id, known malware domain) -> a match flips the check to a 'Possible compromise' alert naming the matched string. expectedStrings doubles as an integrity canary -> its absence flips to 'Possible defacement'.",
+        "name": "Client Site (integrity)",
+        "url": "https://client-site.example",
+        "unexpectedStrings": [
+          "id=\"_ea_s\"",
+          "estrelamardedetizadora.com"
+        ],
+        "expectedStrings": [
+          "© Client Site"
+        ]
+      },
+      {
+        "_comment": "Posture: xmlrpc should be blocked at the edge. Set expectedStatusCode to the code your block returns (403) so a reachable 200/405 flips the check.",
+        "name": "Client Site xmlrpc (should be blocked)",
+        "url": "https://client-site.example/xmlrpc.php",
+        "expectedStatusCode": 403
       }
     ]
   },
@@ -92,5 +112,36 @@
     "refreshInterval": 60000,
     "reportingKey": "your-daemonitor-cloudflare-reporting-key",
     "maxDataAge": 300000
+  },
+  "wordpress": {
+    "_comment": "Runs on the WP host via WP-CLI + filesystem + crontab. runAs is the OS user WP-CLI runs as (it refuses root); cronUser is the web user whose crontab should be empty. Diffs (new admin / demotion) are computed server-side against the prior snapshot.",
+    "name": "wordpress",
+    "uniqueId": "wordpress",
+    "refreshInterval": 300000,
+    "sites": [
+      {
+        "name": "Client Site",
+        "path": "/var/www/client-site",
+        "url": "https://client-site.example",
+        "runAs": "www-data",
+        "cronUser": "www-data",
+        "criticalPages": ["login", "home"],
+        "servicePatterns": ["wpsvc", "wpengine", "bot", "svc", "researchlabs"],
+        "muPluginsAllowlist": []
+      }
+    ]
+  },
+  "logwatch": {
+    "_comment": "Tails access logs for WP2Shell (batch/v1->207), webshell exec, xmlrpc bursts, and batch->login correlation. The log MUST record the real client IP — behind Cloudflare configure nginx real_ip (CF-Connecting-IP) so findings point at the visitor, not the CF edge. Starts tailing from the current end unless fromStart:true.",
+    "name": "logwatch",
+    "uniqueId": "logwatch",
+    "refreshInterval": 60000,
+    "xmlrpcBurstThreshold": 20,
+    "sources": [
+      {
+        "name": "client-site access",
+        "path": "/var/log/nginx/client-site.access.log"
+      }
+    ]
   }
 }
