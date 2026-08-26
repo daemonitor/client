@@ -1,11 +1,30 @@
+# Reference copy of the unit the agent installs for itself.
+#
+# You do not need to copy this by hand. Run:
+#
+#   sudo daemonitor-client --install-service
+#
+# which fills in the right user, home directory and binary path for this
+# machine and starts the service. This file is kept for people who would
+# rather place it themselves; edit User and WorkingDirectory to match the
+# account whose ~/.config/daemonitor holds the credentials.
+
 [Unit]
-Description=Daemonitor Client
-After=multi-user.target
+Description=daemonitor monitoring agent
+Documentation=https://daemonitor.com/guide
+# The agent pushes over the network, so wait for a routable address rather
+# than just for the network stack to exist.
+After=network-online.target
+Wants=network-online.target
 
 [Service]
-WorkingDirectory=/etc/daemonitor
-ExecStart=node --experimental-modules /usr/bin/daemonitor-client
 Type=simple
+User=daemonitor
+WorkingDirectory=/home/daemonitor
+ExecStart=/usr/bin/daemonitor-client
+Restart=always
+RestartSec=10
+NoNewPrivileges=yes
 
 [Install]
 WantedBy=multi-user.target

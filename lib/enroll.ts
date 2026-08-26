@@ -41,6 +41,12 @@ const readable = (path: string): boolean => {
   }
 }
 
+/** lxd listens on one of these depending on snap versus package install. */
+const LXD_SOCKETS = [
+  "/var/snap/lxd/common/lxd/unix.socket",
+  "/var/lib/lxd/unix.socket",
+]
+
 /** Is something listening on localhost:port? Used to spot local databases. */
 const listening = (port: number, timeoutMs = 300): Promise<boolean> =>
   new Promise((resolve) => {
@@ -66,7 +72,10 @@ export async function detectPlugins(): Promise<string[]> {
   // The binary alone isn't enough — without socket access the plugin sees
   // nothing, which looks like "Docker is broken" rather than "not permitted".
   if (onPath("docker") && readable("/var/run/docker.sock")) found.push("docker")
-  if (onPath("lxc")) found.push("lxc")
+  // Same trap as docker: `lxc` is on PATH on plenty of boxes with no lxd
+  // behind it, and enabling the plugin there just parks a dead entry in the
+  // config. Require a socket to talk to.
+  if (onPath("lxc") && LXD_SOCKETS.some(readable)) found.push("lxc")
   if (await listening(27017)) found.push("mongodb")
 
   return found

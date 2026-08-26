@@ -11,6 +11,7 @@ import { join } from "path"
 import {
   CONFIG_FILENAME,
   CREDENTIALS_FILENAME,
+  chownToSudoUser,
   configSearchPaths,
   ensureDir,
   stateDir,
@@ -76,6 +77,8 @@ export function saveCredentials(creds: Credentials, dir?: string): string {
   const path = join(target, CREDENTIALS_FILENAME)
   // 0600: this file holds the ingest credential.
   writeFileSync(path, JSON.stringify(creds, null, 2) + "\n", { mode: 0o600 })
+  chownToSudoUser(target)
+  chownToSudoUser(path)
   return path
 }
 
@@ -84,6 +87,8 @@ export function saveConfig(config: Record<string, any>, dir?: string): string {
   ensureDir(target)
   const path = join(target, CONFIG_FILENAME)
   writeFileSync(path, JSON.stringify(config, null, 2) + "\n", { mode: 0o644 })
+  chownToSudoUser(target)
+  chownToSudoUser(path)
   return path
 }
 

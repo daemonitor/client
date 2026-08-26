@@ -11,6 +11,7 @@ export interface CliOptions {
   config?: string;
   dir?: string;
   plugins?: string[];
+  installService: boolean;
   help: boolean;
   version: boolean;
 }
@@ -30,6 +31,8 @@ Options:
                       working directory, the state directory, /etc/daemonitor.
   --dir <path>        State directory for credentials and config.
   --plugins <list>    Comma-separated plugin list, overriding the config file.
+  --install-service   Install and start a systemd unit so the agent survives
+                      reboots and disconnects. Needs root.
   -h, --help          Show this message.
   -v, --version       Print the agent version.
 
@@ -45,7 +48,7 @@ const splitList = (value: string): string[] =>
   value.split(",").map((s) => s.trim()).filter(Boolean)
 
 export function parseArgs(argv: string[]): CliOptions {
-  const opts: CliOptions = { help: false, version: false }
+  const opts: CliOptions = { installService: false, help: false, version: false }
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
@@ -69,6 +72,7 @@ export function parseArgs(argv: string[]): CliOptions {
       case "--config": opts.config = next(); break
       case "--dir": opts.dir = next(); break
       case "--plugins": opts.plugins = splitList(next()); break
+      case "--install-service": opts.installService = true; break
       case "-h": case "--help": opts.help = true; break
       case "-v": case "--version": opts.version = true; break
       default:

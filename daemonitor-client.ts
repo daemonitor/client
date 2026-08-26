@@ -13,6 +13,7 @@ import {
   saveCredentials,
 } from "./lib/config.js"
 import { claim } from "./lib/enroll.js"
+import { installService, offerServiceInstall } from "./lib/service.js"
 import { CONFIG_FILENAME, stateDir } from "./lib/paths.js"
 import { agentVersion } from "./lib/version.js"
 
@@ -52,6 +53,7 @@ async function main() {
   const stored = loadCredentials(opts.dir)
   let systemKey = opts.key || stored?.systemKey
   let enrolledConfig: Record<string, any> | undefined
+  let justEnrolled = false
 
   if (!systemKey && opts.token) {
     console.log(`Enrolling ${hostname()} with ${endpoint}...`)
@@ -71,14 +73,30 @@ async function main() {
       opts.dir,
     )
 
+    justEnrolled = true
     console.log(`Enrolled as "${result.name || hostname()}"`)
     console.log(`Credentials written to ${credentialsPath}`)
+  }
+
+  // Installing the unit is the whole job when asked for explicitly: systemd
+  // starts its own copy, so running the monitor loop here too would double up.
+  // This runs before the credential check on purpose. The unit only launches
+  // the binary; whether a key is present is a question for the service user,
+  // who gets the same message below if it is missing.
+  if (opts.installService) {
+    const result = installService()
+    console.log(result.message)
+    process.exit(result.ok ? 0 : 1)
   }
 
   if (!systemKey) {
     console.error(NO_CREDENTIALS.trim())
     process.exit(1)
   }
+
+  // Otherwise, someone who just enrolled at a terminal almost certainly wants
+  // this to outlive their shell.
+  if (justEnrolled) await offerServiceInstall()
 
   // A config file on disk always wins over what enrollment returned: someone
   // who hand-edited it meant it. The server's config is only written when there
