@@ -1,42 +1,42 @@
 {
   "name": "@daemonitor/client",
   "version": "1.0.14",
-  "description": "",
+  "description": "daemonitor monitoring agent",
   "type": "module",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "files": [
     "dist",
     "etc",
-    "types"
+    "types",
+    "README.md"
   ],
   "bin": {
     "daemonitor-client": "./dist/daemonitor-client.js"
   },
   "scripts": {
-    "start": "bun daemonitor-client.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "start": "node dist/daemonitor-client.js",
+    "dev": "bun daemonitor-client.ts",
+    "prepublishOnly": "npm run build"
   },
-  "packageManager": "pnpm@8.2.0",
+  "packageManager": "pnpm@9.15.9",
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@daemonitor/common": "^1.0.0",
     "@daemonitor/plugins": "^1.1.0",
-    "dotenv": "^16.0.3",
-    "ewelink-api": "^3.1.1",
-    "node-machine-id": "^1.1.12",
-    "nodemon": "^2.0.22",
-    "ohmyfetch": "^0.4.21",
-    "pm2": "^5.3.0",
-    "string-to-color": "^2.2.2",
-    "ts-node": "^10.9.1"
+    "dotenv": "^16.4.5",
+    "node-machine-id": "^1.1.12"
   },
   "devDependencies": {
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.0.0"
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=18.17"
   }
 }

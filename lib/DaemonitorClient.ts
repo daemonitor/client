@@ -1,5 +1,5 @@
 import { PluginManager } from "@daemonitor/plugins"
-import { createConnector } from "../connectors"
+import { createConnector } from "../connectors/index.js"
 import { IConnector } from "@daemonitor/common"
 import * as dotenv from "dotenv"
 
@@ -8,10 +8,10 @@ dotenv.config()
 // Define the client configuration interface
 export interface DaemonitorClientConfig {
   plugins: string[];
-  connectors?: Array<{
+  connectors?: Array<string | {
     type: string;
-    name: string;
-    config: any;
+    name?: string;
+    config?: any;
   }>;
   apiBaseUrl?: string;
   apiUrl?: string;
@@ -54,20 +54,29 @@ export async function createDaemonitorClient(config: DaemonitorClientConfig): Pr
       pluginManagerInstance = PluginManager;
       await pluginManagerInstance.initialize(config as Record<string, any>);
       
+      const restConfig = {
+        apiUrl: config.apiUrl || `${apiBaseUrl}/clientstate/update`,
+        systemKey
+      };
+
       // Set up default connector if none provided
       if (!config.connectors || config.connectors.length === 0) {
-        config.connectors = [{
-          type: "rest-api",
-          name: "REST API",
-          config: {
-            apiUrl: config.apiUrl || `${apiBaseUrl}/api/clientstate/update`,
-            systemKey
-          }
-        }];
+        config.connectors = [{ type: "rest-api", name: "REST API", config: restConfig }];
       }
-      
+
+      // Accept the shorthand the docs have always shown (`"connectors": ["rest-api"]`)
+      // alongside the long form. Either way the rest-api connector inherits the
+      // resolved endpoint and key, so neither has to be repeated in the file.
+      const connectorItems = config.connectors.map((item) => {
+        const entry = typeof item === "string" ? { type: item, name: item, config: {} } : { ...item };
+        if (entry.type === "rest-api") {
+          entry.config = { ...restConfig, ...(entry.config || {}) };
+        }
+        return entry;
+      });
+
       // Create and add connectors
-      for (const connectorItem of config.connectors) {
+      for (const connectorItem of connectorItems) {
         const connector = createConnector(connectorItem.type, connectorItem.config);
         if (connector) {
           connectors.push(connector);

@@ -1,49 +1,28 @@
 {
-  "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
-  },
-  "skipIgnore": true,
   "compilerOptions": {
     "outDir": "./dist",
     "sourceMap": true,
-    "module": "ESNext",
-    "target": "ESNext",
+    "declaration": false,
+    "module": "NodeNext",
+    "target": "ES2022",
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "jsx": "react-jsx",
     "strict": true,
-    "types": ["bun-types"],
+    "skipLibCheck": true,
     "lib": [
-      "ESNext"
+      "ES2022",
+      "DOM"
     ],
-    "baseUrl": ".",
-    "paths": {
-      "~/*": [
-        "*"
-      ],
-      "@daemonitor/common/*": [
-        "node_modules/@daemonitor/common/*"
-      ],
-      "@daemonitor/plugins/*": [
-        "node_modules/@daemonitor/plugins/*"
-      ]
-    },
-    "typeRoots": [
-      "./node_modules/@types",
-      "./node_modules/@daemonitor/common/types",
-      "./node_modules/@daemonitor/plugins/types",
-      "./types"
+    "types": [
+      "node"
     ]
   },
   "include": [
-    "**/*.ts",
-    "node_modules/@daemonitor/common/index.ts",
-    "node_modules/@daemonitor/plugins/index.ts"
+    "**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist"
   ]
 }

@@ -3,7 +3,7 @@ export {
   createDaemonitorClient,
   DaemonitorClientConfig,
   DaemonitorClientInstance
-} from "./lib/DaemonitorClient"
+} from "./lib/DaemonitorClient.js"
 
 // Export connector factories
 export {
@@ -11,4 +11,4 @@ export {
   createConsoleConnector,
   createRestApiConnector,
   ConnectorFactories
-} from "./connectors"
+} from "./connectors/index.js"

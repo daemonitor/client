@@ -1,9 +1,9 @@
-import { createConsoleConnector } from "./ConsoleConnector"
-import { createRestApiConnector } from "./RestApiConnector"
+import { createConsoleConnector } from "./ConsoleConnector.js"
+import { createRestApiConnector } from "./RestApiConnector.js"
 import { IConnector } from "@daemonitor/common"
 
 // Factory functions for creating connectors
-export const ConnectorFactories = {
+export const ConnectorFactories: Record<string, (config: any) => IConnector> = {
   "console": createConsoleConnector,
   "rest-api": createRestApiConnector,
 };
