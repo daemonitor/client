@@ -44,13 +44,30 @@ function serviceUser(): { user: string; home: string } {
   return { user: info.username, home: info.homedir }
 }
 
-/** Absolute path to the binary systemd should launch. */
+const GLOBAL_BINS = ["/usr/local/bin/daemonitor-client", "/usr/bin/daemonitor-client"]
+
+/**
+ * Absolute path to the binary systemd should launch, or "" if there isn't a
+ * durable one.
+ *
+ * npx runs out of ~/.npm/_npx/<hash>/, which is a cache, not an installation.
+ * A unit pointing in there works right up until npm prunes the directory, and
+ * then the service is dead with a confusing ENOENT. So a cache path is never
+ * good enough: fall back to a real global install, and if there is none, say so
+ * rather than writing a unit with a built-in expiry date.
+ */
 function execStart(): string {
-  // argv[1] is the resolved script when run through the bin shim, which is
-  // what we want: a global install and a local one land in different places.
+  // A global install is the durable answer, so prefer it over wherever this
+  // particular process happens to be running from. Running the installer out
+  // of a tarball in /tmp should not pin the service to /tmp.
+  const global = GLOBAL_BINS.find((p) => existsSync(p))
+  if (global) return global
+
   const script = process.argv[1]
-  if (script && existsSync(script)) return `${process.execPath} ${script}`
-  return "/usr/bin/daemonitor-client"
+  if (script && !script.includes("/_npx/") && existsSync(script)) {
+    return `${process.execPath} ${script}`
+  }
+  return ""
 }
 
 export function unitFile(): string {
@@ -97,6 +114,14 @@ export function installService(): InstallResult {
     return {
       ok: false,
       message: `Installing a service needs root. Run:\n\n  ${rerun}\n`,
+    }
+  }
+
+  if (!execStart()) {
+    return {
+      ok: false,
+      message:
+        "This is running from npx's cache, which npm can clear at any time, so a service pointing at it would eventually break.\n\nInstall it properly first, then retry:\n\n  sudo npm install -g @daemonitor/client\n  sudo daemonitor-client --install-service\n",
     }
   }
 

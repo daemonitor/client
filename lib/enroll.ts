@@ -7,6 +7,7 @@
 // and enable the plugins that actually have something to monitor.
 
 import { arch, hostname, platform, release, type as osType } from "os"
+import { execFileSync } from "child_process"
 import { accessSync, constants } from "fs"
 import { createConnection } from "net"
 import { delimiter, join } from "path"
@@ -32,7 +33,25 @@ const onPath = (bin: string): boolean => {
   return false
 }
 
+/**
+ * Can the account that will actually run the agent read this?
+ *
+ * Under sudo the answer is not "can root read it". The service runs as the
+ * human who typed sudo, so checking root's access enables plugins that then
+ * fail at runtime: a box whose user was not in the docker group got the
+ * docker plugin anyway, and every cycle logged a permission error.
+ */
 const readable = (path: string): boolean => {
+  const asUser = process.env.SUDO_USER
+  if (asUser && asUser !== "root") {
+    try {
+      execFileSync("sudo", ["-n", "-u", asUser, "test", "-r", path], { stdio: "ignore" })
+      return true
+    } catch {
+      return false
+    }
+  }
+
   try {
     accessSync(path, constants.R_OK)
     return true
