@@ -78,11 +78,31 @@ async function main() {
     console.log(`Credentials written to ${credentialsPath}`)
   }
 
+  // Persist what enrollment resolved BEFORE anything can exit.
+  //
+  // This used to sit after the --install-service branch, so
+  // `--token X --install-service` enrolled, installed the unit and exited
+  // without ever writing the config. The service then started, found nothing
+  // on disk, and fell back to the built-in default of the OS plugin alone.
+  // Every plugin the operator picked was silently dropped, on the exact
+  // command the agent itself tells people to run.
+  //
+  // A config file already on disk still wins: someone who hand-edited it
+  // meant it.
+  let { config, source } = loadConfig(opts.config, opts.dir)
+
+  if (enrolledConfig && source === "defaults") {
+    const target = join(stateDir(opts.dir), CONFIG_FILENAME)
+    if (!existsSync(target)) {
+      saveConfig(enrolledConfig, opts.dir)
+      console.log(`Config written to ${target}`)
+    }
+    config = enrolledConfig
+    source = target
+  }
+
   // Installing the unit is the whole job when asked for explicitly: systemd
   // starts its own copy, so running the monitor loop here too would double up.
-  // This runs before the credential check on purpose. The unit only launches
-  // the binary; whether a key is present is a question for the service user,
-  // who gets the same message below if it is missing.
   if (opts.installService) {
     const result = installService()
     console.log(result.message)
@@ -97,21 +117,6 @@ async function main() {
   // Otherwise, someone who just enrolled at a terminal almost certainly wants
   // this to outlive their shell.
   if (justEnrolled) await offerServiceInstall()
-
-  // A config file on disk always wins over what enrollment returned: someone
-  // who hand-edited it meant it. The server's config is only written when there
-  // is nothing there to overwrite.
-  let { config, source } = loadConfig(opts.config, opts.dir)
-
-  if (enrolledConfig && source === "defaults") {
-    const target = join(stateDir(opts.dir), CONFIG_FILENAME)
-    if (!existsSync(target)) {
-      saveConfig(enrolledConfig, opts.dir)
-      console.log(`Config written to ${target}`)
-    }
-    config = enrolledConfig
-    source = target
-  }
 
   if (opts.plugins?.length) {
     config = { ...config, plugins: opts.plugins }
