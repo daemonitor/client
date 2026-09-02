@@ -19,7 +19,8 @@
     "mongodb",
     "cloudflare",
     "wordpress",
-    "logwatch"
+    "logwatch",
+    "patroni"
   ],
   "ewelink": {
     "name": "ewelink",
@@ -43,6 +44,15 @@
     "dockerBin": "docker",
     "projects": [],
     "exclude": []
+  },
+  "patroni": {
+    "_comment": "Runs ON a Patroni node and reads its local REST API (unauthenticated GETs by default). /patroni gives this node's own role, which is how daemonitor learns which host is the leader; /cluster gives every member's role, state and replication lag. Required for cluster placement 'leader' — without it, 'leader' can only be enforced as 'exactly one member'.",
+    "name": "patroni",
+    "uniqueId": "patroni",
+    "refreshInterval": 30000,
+    "url": "http://localhost:8008",
+    "lagWarnBytes": 33554432,
+    "lagCritBytes": 268435456
   },
   "lxc": {
     "name": "lxc",
