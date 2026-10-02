@@ -20,7 +20,8 @@
     "cloudflare",
     "wordpress",
     "logwatch",
-    "patroni"
+    "patroni",
+    "adsense"
   ],
   "ewelink": {
     "name": "ewelink",
@@ -153,5 +154,14 @@
         "path": "/var/log/nginx/client-site.access.log"
       }
     ]
+  },
+  "adsense": {
+    "_comment": "AdSense has no service-account access. Mint a refresh token once (scope adsense.readonly) with an OAuth client whose consent screen is Internal or published to production; a client left in Testing expires the token after 7 days. accountId (accounts/pub-...) is only needed when the token can see more than one account.",
+    "name": "AdSense",
+    "uniqueId": "adsense",
+    "refreshInterval": 600000,
+    "clientId": "your-oauth-client-id.apps.googleusercontent.com",
+    "clientSecret": "your-oauth-client-secret",
+    "refreshToken": "your-refresh-token"
   }
 }
