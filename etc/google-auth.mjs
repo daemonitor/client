@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-// Mint an AdSense refresh token for the adsense plugin and write it, with the
-// OAuth client id and secret, into an agent's client.config.json.
+// Mint a Google refresh token for the adsense or ga4 plugin and write it, with
+// the OAuth client id and secret, into an agent's client.config.json.
 //
-//   node etc/adsense-auth.mjs <client_secret.json> [ssh-host] [remote-config-path]
+//   node etc/google-auth.mjs [--source=adsense|ga4] <client_secret.json> [ssh-host] [remote-config-path]
+//
+// --source picks the scope, the config block written and the check run before
+// saving. It defaults to adsense.
 //
 // <client_secret.json> is the file Google's "Download JSON" gives you for a
 // Desktop-app OAuth client. With no ssh-host the values are merged into
@@ -12,7 +15,8 @@
 // loopback port, and trades the code for a refresh token. Nothing secret is
 // printed, and the values travel to the remote host on stdin, never in argv.
 //
-// The consenting Google account must have access to the AdSense account. The
+// The consenting Google account must have access to the AdSense account or the
+// Analytics properties. The
 // OAuth app must be "In production" (or Internal): one left in Testing hands
 // out refresh tokens that expire after 7 days.
 
@@ -20,17 +24,37 @@ import { createServer } from "node:http"
 import { readFileSync, writeFileSync } from "node:fs"
 import { spawn, spawnSync } from "node:child_process"
 
-const [jsonPath, sshHost, remoteConfig = "daemonitor-src/client/client.config.json"] = process.argv.slice(2)
-if (!jsonPath) {
-  console.error("usage: node etc/adsense-auth.mjs <client_secret.json> [ssh-host] [remote-config-path]")
+const flags = process.argv.slice(2).filter((a) => a.startsWith("--"))
+const [jsonPath, sshHost, remoteConfig = "daemonitor-src/client/client.config.json"] = process.argv.slice(2).filter((a) => !a.startsWith("--"))
+const sourceName = (flags.find((f) => f.startsWith("--source=")) || "--source=adsense").split("=")[1]
+
+// Per source: the scope to ask for, the config block to fill, and a call that
+// proves the token can see something before it is saved.
+const SOURCES = {
+  adsense: {
+    label: "AdSense",
+    scope: "https://www.googleapis.com/auth/adsense.readonly",
+    block: { name: "AdSense", uniqueId: "adsense", refreshInterval: 900000 },
+    verifyUrl: "https://adsense.googleapis.com/v2/accounts",
+    list: (body) => (body.accounts || []).map((a) => `${a.displayName || ""} (${a.name})`),
+  },
+  ga4: {
+    label: "Google Analytics",
+    scope: "https://www.googleapis.com/auth/analytics.readonly",
+    block: { name: "Google Analytics", uniqueId: "ga4", refreshInterval: 900000 },
+    verifyUrl: "https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=200",
+    list: (body) => (body.accountSummaries || []).map((a) => `${a.displayName || a.account} (${(a.propertySummaries || []).length} properties)`),
+  },
+}
+const source = SOURCES[sourceName]
+if (!jsonPath || !source) {
+  console.error("usage: node etc/google-auth.mjs [--source=adsense|ga4] <client_secret.json> [ssh-host] [remote-config-path]")
   process.exit(2)
 }
 
 const file = JSON.parse(readFileSync(jsonPath, "utf8"))
 const client = file.installed || file.web
 if (!client?.client_id || !client?.client_secret) throw new Error("not an OAuth client JSON (no installed/web client)")
-
-const SCOPE = "https://www.googleapis.com/auth/adsense.readonly"
 
 async function post(url, params) {
   const res = await fetch(url, { method: "POST", body: new URLSearchParams(params) })
@@ -39,29 +63,31 @@ async function post(url, params) {
   return body
 }
 
-// Merge the three values into the config's `adsense` block, leaving the rest alone.
+// Merge the three values into the source's config block, leaving the rest
+// alone. argv carries the path, block key and defaults (no secrets); stdin
+// carries the values.
 const MERGE = `
 import json, sys
-path = sys.argv[1]
+path, key, defaults = sys.argv[1], sys.argv[2], json.loads(sys.argv[3])
 vals = json.load(sys.stdin)
 cfg = json.load(open(path))
-cfg.setdefault("adsense", {"name": "AdSense", "uniqueId": "adsense", "refreshInterval": 600000}).update(vals)
+cfg.setdefault(key, defaults).update(vals)
 open(path, "w").write(json.dumps(cfg, indent=2) + "\\n")
-print("wrote adsense credentials to", path)
+print("wrote", key, "credentials to", path)
 `
 
 function writeConfig(vals) {
   if (!sshHost) {
     const path = "client.config.json"
     const cfg = JSON.parse(readFileSync(path, "utf8"))
-    cfg.adsense = { name: "AdSense", uniqueId: "adsense", refreshInterval: 600000, ...cfg.adsense, ...vals }
+    cfg[sourceName] = { ...source.block, ...cfg[sourceName], ...vals }
     writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n")
-    console.log("wrote adsense credentials to", path)
+    console.log("wrote", sourceName, "credentials to", path)
     return
   }
   // The python source goes in argv (it holds no secret); the values go on stdin.
   // Single-quoted for the remote shell: MERGE contains no single quotes.
-  const r = spawnSync("ssh", [sshHost, `python3 -c '${MERGE}' '${remoteConfig}'`], {
+  const r = spawnSync("ssh", [sshHost, `python3 -c '${MERGE}' '${remoteConfig}' '${sourceName}' '${JSON.stringify(source.block)}'`], {
     input: JSON.stringify(vals),
     stdio: ["pipe", "inherit", "inherit"],
   })
@@ -88,14 +114,14 @@ const server = createServer(async (req, res) => {
     })
     if (!tok.refresh_token) return done("Google returned no refresh token. Remove the app's access at myaccount.google.com/permissions and run this again.", 1)
 
-    // Prove the token can see an AdSense account before saving it.
-    const acc = await fetch("https://adsense.googleapis.com/v2/accounts", { headers: { Authorization: `Bearer ${tok.access_token}` } })
-    const accounts = ((await acc.json().catch(() => ({}))).accounts || []).map((a) => `${a.displayName || ""} (${a.name})`)
-    if (!acc.ok || !accounts.length) return done(`Signed in, but that Google account can see no AdSense account (HTTP ${acc.status}). Nothing was saved.`, 1)
-    console.log("AdSense accounts visible to this token:", accounts.join(", "))
+    // Prove the token can see something before saving it.
+    const acc = await fetch(source.verifyUrl, { headers: { Authorization: `Bearer ${tok.access_token}` } })
+    const accounts = source.list(await acc.json().catch(() => ({})))
+    if (!acc.ok || !accounts.length) return done(`Signed in, but that Google account can see no ${source.label} account (HTTP ${acc.status}). Nothing was saved.`, 1)
+    console.log(`${source.label} accounts visible to this token:`, accounts.join(", "))
 
     writeConfig({ clientId: client.client_id, clientSecret: client.client_secret, refreshToken: tok.refresh_token })
-    done("AdSense authorization saved.")
+    done(`${source.label} authorization saved.`)
   } catch (e) {
     done(`Failed: ${e.message}`, 1)
   }
@@ -108,11 +134,11 @@ server.listen(0, "127.0.0.1", () => {
     client_id: client.client_id,
     redirect_uri: redirect,
     response_type: "code",
-    scope: SCOPE,
+    scope: source.scope,
     access_type: "offline",
     prompt: "consent select_account",
   })
-  console.log("Opening the Google consent page. Choose the account that has AdSense access.\nIf no browser opens, visit:\n" + auth)
+  console.log(`Opening the Google consent page. Choose the account that has ${source.label} access.\nIf no browser opens, visit:\n` + auth)
   // BROWSER_APP picks the browser, for when the right Google login is not in the default one.
   const app = process.env.BROWSER_APP
   spawn("open", app ? ["-a", app, auth] : [auth], { stdio: "ignore" })
