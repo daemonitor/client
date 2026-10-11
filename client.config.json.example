@@ -55,6 +55,18 @@
     "lagWarnBytes": 33554432,
     "lagCritBytes": 268435456
   },
+  "supabase": {
+    "_comment": "Supabase cloud projects. Add \"supabase\" to plugins to enable. Runs on any agent. accessToken is a personal access token (project status and per-service health) and covers every project in ITS account, so give a project its own when it lives in a different account. serviceKey is that project's secret API key (disk, connections, database size). Either one alone works.",
+    "refreshInterval": 60000,
+    "accessToken": "sbp_default_account_token",
+    "diskWarnPct": 80,
+    "diskCritPct": 90,
+    "connWarnPct": 85,
+    "projects": [
+      { "ref": "abcdefghijklmnopqrst", "name": "portal" },
+      { "ref": "tsrqponmlkjihgfedcba", "name": "calendar", "accessToken": "sbp_other_account_token", "serviceKey": "sb_secret_..." }
+    ]
+  },
   "lxc": {
     "name": "lxc",
     "uniqueId": "lxc",
