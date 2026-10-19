@@ -145,8 +145,12 @@ const server = createServer(async (req, res) => {
 
     // Prove the token can see something before saving it.
     const acc = await fetch(source.verifyUrl, { headers: { Authorization: `Bearer ${tok.access_token}` } })
-    const accounts = source.list(await acc.json().catch(() => ({})))
-    if (!acc.ok || !accounts.length) return done(`Signed in, but that Google account can see no ${source.label} account (HTTP ${acc.status}). Nothing was saved.`, 1)
+    const body = await acc.json().catch(() => ({}))
+    const accounts = source.list(body)
+    // Google's own reason ("API not enabled in project N", "not authorized") is
+    // what tells you which fix applies. It holds nothing secret.
+    const why = body?.error?.message ? `\nGoogle says: ${body.error.message}` : ""
+    if (!acc.ok || !accounts.length) return done(`Signed in, but that Google account can see no ${source.label} account (HTTP ${acc.status}). Nothing was saved.${why}`, 1)
     console.log(`${source.label} accounts visible to this token:`, accounts.join(", "))
 
     writeConfig({ clientId: client.client_id, clientSecret: client.client_secret, refreshToken: tok.refresh_token })
