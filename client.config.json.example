@@ -21,7 +21,8 @@
     "wordpress",
     "logwatch",
     "patroni",
-    "adsense"
+    "adsense",
+    "cost"
   ],
   "ewelink": {
     "name": "ewelink",
@@ -163,5 +164,23 @@
     "clientId": "your-oauth-client-id.apps.googleusercontent.com",
     "clientSecret": "your-oauth-client-secret",
     "refreshToken": "your-refresh-token"
+  },
+  "cost": {
+    "_comment": "Spend per provider, one board row each. budget is monthly, in the account currency: projected over = warning, spent over = error. A day above spikeFactor x the prior 7-day average (default 3, and at least 5 more) also warns. Every key here must be read-only billing access. See docs/plugins/cost.md for each provider's key type.",
+    "refreshInterval": 3600000,
+    "providers": [
+      { "provider": "openai", "name": "OpenAI", "adminKey": "sk-admin-...", "budget": 500 },
+      { "provider": "anthropic", "name": "Anthropic", "adminKey": "sk-ant-admin01-...", "budget": 500 },
+      { "provider": "aws", "name": "AWS", "accessKeyId": "AKIA...", "secretAccessKey": "...", "budget": 1000 },
+      { "provider": "vercel", "name": "Vercel", "token": "...", "teamId": "team_..." },
+      { "provider": "fastly", "name": "Fastly", "token": "..." },
+      { "provider": "cloudflare", "name": "Cloudflare", "token": "...", "accountId": "..." },
+      { "provider": "posthog", "name": "PostHog", "apiKey": "phx_...", "host": "https://us.posthog.com" },
+      { "provider": "gcp", "name": "Google Cloud", "clientId": "...", "clientSecret": "...", "refreshToken": "...", "projectId": "my-billing-project", "table": "my-billing-project.billing_export.gcp_billing_export_v1_XXXXXX_XXXXXX_XXXXXX" },
+      { "provider": "workspace", "name": "Google Workspace", "authFrom": "workspace", "customerId": "C0xxxxxxx" },
+      { "provider": "google-ads", "name": "Google Ads", "clientId": "...", "clientSecret": "...", "refreshToken": "...", "developerToken": "...", "customerId": "123-456-7890" },
+      { "provider": "meta-ads", "name": "Meta Ads", "accessToken": "...", "adAccountId": "act_..." }
+    ]
+  
   }
 }

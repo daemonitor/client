@@ -2,7 +2,7 @@
 // Mint a Google refresh token for the adsense or ga4 plugin and write it, with
 // the OAuth client id and secret, into an agent's client.config.json.
 //
-//   node etc/google-auth.mjs [--source=adsense|ga4] <client_secret.json> [ssh-host] [remote-config-path]
+//   node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] <client_secret.json> [ssh-host] [remote-config-path]
 //
 // --source picks the scope, the config block written and the check run before
 // saving. It defaults to adsense.
@@ -27,6 +27,7 @@ import { spawn, spawnSync } from "node:child_process"
 const flags = process.argv.slice(2).filter((a) => a.startsWith("--"))
 const [jsonPath, sshHost, remoteConfig = "daemonitor-src/client/client.config.json"] = process.argv.slice(2).filter((a) => !a.startsWith("--"))
 const sourceName = (flags.find((f) => f.startsWith("--source=")) || "--source=adsense").split("=")[1]
+const customer = (flags.find((f) => f.startsWith("--customer=")) || "").split("=")[1]
 
 // Per source: the scope to ask for, the config block to fill, and a call that
 // proves the token can see something before it is saved.
@@ -45,10 +46,21 @@ const SOURCES = {
     verifyUrl: "https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=200",
     list: (body) => (body.accountSummaries || []).map((a) => `${a.displayName || a.account} (${(a.propertySummaries || []).length} properties)`),
   },
+  // Workspace seat cost for the cost plugin. Needs --customer=<Cxxxxxxx>, the
+  // Admin console customer id. There is no read-only licensing scope; the agent
+  // only ever lists. Point a cost provider at this block with
+  // { "provider": "workspace", "authFrom": "workspace" }.
+  workspace: {
+    label: "Google Workspace",
+    scope: "https://www.googleapis.com/auth/apps.licensing",
+    block: { customerId: customer },
+    verifyUrl: `https://licensing.googleapis.com/apps/licensing/v1/product/Google-Apps/users?customerId=${encodeURIComponent(customer || "")}&maxResults=1`,
+    list: (body) => (body.items ? [customer] : []),
+  },
 }
 const source = SOURCES[sourceName]
-if (!jsonPath || !source) {
-  console.error("usage: node etc/google-auth.mjs [--source=adsense|ga4] <client_secret.json> [ssh-host] [remote-config-path]")
+if (!jsonPath || !source || (sourceName === "workspace" && !customer)) {
+  console.error("usage: node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] <client_secret.json> [ssh-host] [remote-config-path]")
   process.exit(2)
 }
 
