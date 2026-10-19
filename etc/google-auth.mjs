@@ -2,7 +2,7 @@
 // Mint a Google refresh token for the adsense or ga4 plugin and write it, with
 // the OAuth client id and secret, into an agent's client.config.json.
 //
-//   node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] <client_secret.json> [ssh-host] [remote-config-path]
+//   node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] (<client_secret.json> | --client-from=<block>) [ssh-host] [remote-config-path]
 //
 // --source picks the scope, the config block written and the check run before
 // saving. It defaults to adsense.
@@ -25,9 +25,14 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { spawn, spawnSync } from "node:child_process"
 
 const flags = process.argv.slice(2).filter((a) => a.startsWith("--"))
-const [jsonPath, sshHost, remoteConfig = "daemonitor-src/client/client.config.json"] = process.argv.slice(2).filter((a) => !a.startsWith("--"))
-const sourceName = (flags.find((f) => f.startsWith("--source=")) || "--source=adsense").split("=")[1]
-const customer = (flags.find((f) => f.startsWith("--customer=")) || "").split("=")[1]
+const flag = (name) => (flags.find((f) => f.startsWith(`--${name}=`)) || "").split("=")[1]
+// --client-from=<block> reuses the OAuth client id/secret an existing block on
+// the target config already holds (say adsense), so no client JSON file is needed.
+const clientFrom = flag("client-from")
+const positional = process.argv.slice(2).filter((a) => !a.startsWith("--"))
+const [jsonPath, sshHost, remoteConfig = "daemonitor-src/client/client.config.json"] = clientFrom ? [undefined, ...positional] : positional
+const sourceName = flag("source") || "adsense"
+const customer = flag("customer")
 
 // Per source: the scope to ask for, the config block to fill, and a call that
 // proves the token can see something before it is saved.
@@ -59,14 +64,26 @@ const SOURCES = {
   },
 }
 const source = SOURCES[sourceName]
-if (!jsonPath || !source || (sourceName === "workspace" && !customer)) {
-  console.error("usage: node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] <client_secret.json> [ssh-host] [remote-config-path]")
+if ((!jsonPath && !clientFrom) || !source || (sourceName === "workspace" && !customer)) {
+  console.error("usage: node etc/google-auth.mjs [--source=adsense|ga4|workspace] [--customer=Cxxxxxxx] (<client_secret.json> | --client-from=<block>) [ssh-host] [remote-config-path]")
   process.exit(2)
 }
 
-const file = JSON.parse(readFileSync(jsonPath, "utf8"))
-const client = file.installed || file.web
-if (!client?.client_id || !client?.client_secret) throw new Error("not an OAuth client JSON (no installed/web client)")
+// The client id/secret, from a Google JSON file or from a block the target
+// config already has. Read into memory only; never printed.
+function readClient() {
+  if (!clientFrom) {
+    const file = JSON.parse(readFileSync(jsonPath, "utf8"))
+    return file.installed || file.web
+  }
+  const pick = (cfg) => ({ client_id: cfg?.[clientFrom]?.clientId, client_secret: cfg?.[clientFrom]?.clientSecret })
+  if (!sshHost) return pick(JSON.parse(readFileSync("client.config.json", "utf8")))
+  const r = spawnSync("ssh", [sshHost, "cat", remoteConfig], { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] })
+  if (r.status !== 0) throw new Error(`could not read ${remoteConfig} on ${sshHost}`)
+  return pick(JSON.parse(r.stdout))
+}
+const client = readClient()
+if (!client?.client_id || !client?.client_secret) throw new Error(clientFrom ? `no clientId/clientSecret in the "${clientFrom}" block` : "not an OAuth client JSON (no installed/web client)")
 
 async function post(url, params) {
   const res = await fetch(url, { method: "POST", body: new URLSearchParams(params) })
