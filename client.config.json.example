@@ -22,6 +22,7 @@
     "logwatch",
     "patroni",
     "adsense",
+    "nagios",
     "cost"
   ],
   "ewelink": {
@@ -181,6 +182,16 @@
       { "provider": "google-ads", "name": "Google Ads", "clientId": "...", "clientSecret": "...", "refreshToken": "...", "developerToken": "...", "customerId": "123-456-7890" },
       { "provider": "meta-ads", "name": "Meta Ads", "accessToken": "...", "adAccountId": "act_..." }
     ]
-  
+  },
+  "nagios": {
+    "_comment": "Runs Nagios-compatible checks (monitoring-plugins, Icinga, Sensu). Each check is its own service. command is an argument array run without a shell; use [\"sh\", \"-c\", \"...\"] if you need one. Commands only ever come from this file.",
+    "refreshInterval": 60000,
+    "timeout": 30,
+    "pluginDir": "/usr/lib/nagios/plugins",
+    "checks": [
+      { "name": "disk /", "command": ["check_disk", "-w", "20%", "-c", "10%", "-p", "/"] },
+      { "name": "load", "command": ["check_load", "-r", "-w", "1.5,1.2,1.0", "-c", "3,2.5,2"] },
+      { "name": "ssl example.com", "command": ["check_http", "-H", "example.com", "-S", "-C", "14,7"], "timeout": 15 }
+    ]
   }
 }
