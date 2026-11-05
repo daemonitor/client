@@ -17,7 +17,6 @@ import {
   stateDir,
 } from "./paths.js"
 
-export const DEFAULT_ENDPOINT = "https://daemonitor.com/api"
 
 /** What enrollment persists: the durable identity of this agent. */
 export interface Credentials {
@@ -93,7 +92,16 @@ export function saveConfig(config: Record<string, any>, dir?: string): string {
 }
 
 /** Normalize whatever the user gave us into a base URL with no trailing slash. */
-export function normalizeEndpoint(endpoint?: string): string {
-  const value = (endpoint || DEFAULT_ENDPOINT).trim().replace(/\/+$/, "")
+/**
+ * Your tenant's API base, or undefined when nothing names one. There is no
+ * default: daemonitor.com signs people in but takes no reports, so guessing it
+ * would leave an agent reporting into nothing.
+ */
+export function normalizeEndpoint(endpoint?: string): string | undefined {
+  const value = (endpoint || "").trim().replace(/\/+$/, "")
+  if (!value) return undefined
   return /^https?:\/\//.test(value) ? value : `https://${value}`
 }
+
+/** What to tell someone whose agent has no endpoint. */
+export const NO_ENDPOINT = "No endpoint. Pass --endpoint https://<your tenant>/api (the command from Add system includes it), or set DAEMONITOR_ENDPOINT."

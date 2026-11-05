@@ -35,10 +35,9 @@ export async function createDaemonitorClient(config: DaemonitorClientConfig): Pr
     throw new Error("No system key provided. Set SYSTEM_KEY environment variable or pass systemKey in config.");
   }
   
+  // The entry point has already refused to start without an endpoint or an
+  // apiUrl in the config file, so one of them is set.
   const apiBaseUrl = config.apiBaseUrl || process.env.API_BASE_URL;
-  if (!apiBaseUrl) {
-    throw new Error("No API base URL provided. Set API_BASE_URL environment variable or pass apiBaseUrl in config.");
-  }
   
   // Validate plugins configuration
   if (!config.plugins || config.plugins.length === 0) {
@@ -55,7 +54,7 @@ export async function createDaemonitorClient(config: DaemonitorClientConfig): Pr
       await pluginManagerInstance.initialize(config as Record<string, any>);
       
       const restConfig = {
-        apiUrl: config.apiUrl || `${apiBaseUrl}/clientstate/update`,
+        apiUrl: config.apiUrl || (apiBaseUrl ? `${apiBaseUrl}/clientstate/update` : undefined),
         systemKey
       };
 
