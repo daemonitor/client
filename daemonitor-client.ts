@@ -9,6 +9,7 @@ import {
   loadConfig,
   loadCredentials,
   normalizeEndpoint,
+  NO_ENDPOINT,
   saveConfig,
   saveCredentials,
 } from "./lib/config.js"
@@ -56,6 +57,7 @@ async function main() {
   let justEnrolled = false
 
   if (!systemKey && opts.token) {
+    if (!endpoint) throw new Error(NO_ENDPOINT)
     console.log(`Enrolling ${hostname()} with ${endpoint}...`)
 
     const result = await claim(opts.token, endpoint)
@@ -126,9 +128,13 @@ async function main() {
   // The endpoint the credentials were minted against is the right default for
   // an agent started later with no --endpoint.
   const apiBaseUrl = opts.endpoint ? endpoint : normalizeEndpoint(stored?.endpoint)
+  // A config file can still name the URL itself (`apiUrl`, top level or on a
+  // rest-api connector), which is how older installs are set up.
+  const fileUrl = config.apiUrl || (config.connectors || []).some((c: any) => typeof c === "object" && c?.config?.apiUrl)
+  if (!apiBaseUrl && !fileUrl) throw new Error(NO_ENDPOINT)
 
   console.log(`daemonitor-client ${AGENT_VERSION} on ${hostname()}`)
-  console.log(`  endpoint  ${apiBaseUrl}`)
+  console.log(`  endpoint  ${apiBaseUrl || "from the config file"}`)
   console.log(`  config    ${source}`)
   console.log(`  plugins   ${plugins.length ? plugins.join(", ") : "none"}`)
 
@@ -141,7 +147,7 @@ async function main() {
     plugins,
     systemKey,
     apiBaseUrl,
-    apiUrl: `${apiBaseUrl}/clientstate/update`,
+    ...(apiBaseUrl ? { apiUrl: `${apiBaseUrl}/clientstate/update` } : {}),
   })
 
   await client.start()

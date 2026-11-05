@@ -26,7 +26,8 @@ Options:
   --token <token>     Enrollment token from the dashboard. Exchanged for a
                       system key on first run, then never needed again.
   --key <key>         System key, if you already have one. Skips enrollment.
-  --endpoint <url>    API base URL (default: https://daemonitor.com/api)
+  --endpoint <url>    your tenant's API, e.g. https://monitor.example.com/api
+                      (stored at enrollment; required with a bare --key)
   --config <path>     Path to client.config.json. Defaults to a search of the
                       working directory, the state directory, /etc/daemonitor.
   --dir <path>        State directory for credentials and config.

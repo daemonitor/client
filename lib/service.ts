@@ -75,7 +75,7 @@ export function unitFile(): string {
 
   return `[Unit]
 Description=daemonitor monitoring agent
-Documentation=https://daemonitor.com/guide
+Documentation=https://docs.daemonitor.com/guide/getting-started
 # The agent pushes over the network, so wait for a routable address rather
 # than just for the network stack to exist.
 After=network-online.target
