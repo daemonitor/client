@@ -57,7 +57,8 @@ const SOURCES = {
   // { "provider": "workspace", "authFrom": "workspace" }.
   workspace: {
     label: "Google Workspace",
-    scope: "https://www.googleapis.com/auth/apps.licensing",
+    // Licensing for the cost provider, reports usage for the workspace storage plugin.
+    scope: "https://www.googleapis.com/auth/apps.licensing https://www.googleapis.com/auth/admin.reports.usage.readonly",
     block: { customerId: customer },
     verifyUrl: `https://licensing.googleapis.com/apps/licensing/v1/product/Google-Apps/users?customerId=${encodeURIComponent(customer || "")}&maxResults=1`,
     list: (body) => (body.items ? [customer] : []),
