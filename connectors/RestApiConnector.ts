@@ -10,13 +10,36 @@ export interface RestApiConnectorOptions {
 const REQUEST_TIMEOUT_MS = 15000
 
 // Factory function to create a REST API connector
-export function createRestApiConnector(options: RestApiConnectorOptions): IConnector {
+export function createRestApiConnector(options: RestApiConnectorOptions): IConnector & { sendFrame(uniqueId: string, jpeg: Uint8Array): Promise<void> } {
   const { apiUrl, systemKey } = options;
 
   console.log("Creating RestApiConnector:", apiUrl);
 
+  // Camera frames go beside reports, on the same tenant.
+  const frameUrl = /\/clientstate\/update\/?$/.test(apiUrl)
+    ? apiUrl.replace(/\/clientstate\/update\/?$/, "/camera/frame")
+    : new URL("/api/camera/frame", apiUrl).href;
+  let frameErrorLogged = "";
+
   // Return the connector implementation
   return {
+    /** One camera's latest JPEG. Logs a failure once until it changes, since frames come every few seconds. */
+    sendFrame: async (uniqueId: string, jpeg: Uint8Array): Promise<void> => {
+      let problem = "";
+      try {
+        const res = await fetch(frameUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "image/jpeg", "X-System-Key": systemKey, "X-Unique-Id": uniqueId },
+          body: jpeg as unknown as BodyInit,
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+        if (!res.ok) problem = `HTTP ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`;
+      } catch (error: any) {
+        problem = error?.message || String(error);
+      }
+      if (problem && problem !== frameErrorLogged) console.error(`Failed to send frame for ${uniqueId}: ${problem}`);
+      frameErrorLogged = problem;
+    },
     sendData: async (data: any, type: string, uniqueId: string): Promise<void> => {
       try {
         const res = await fetch(apiUrl, {

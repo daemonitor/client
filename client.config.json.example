@@ -23,8 +23,17 @@
     "patroni",
     "adsense",
     "nagios",
-    "cost"
+    "cost",
+    "camera"
   ],
+  "camera": {
+    "frameInterval": 10000,
+    "refreshInterval": 60000,
+    "cameras": [
+      { "name": "Front door", "driver": "snapshot", "url": "http://192.168.1.20/ISAPI/Streaming/channels/102/picture", "username": "viewer", "password": "camera-password" },
+      { "name": "Lobby", "driver": "onvif", "host": "192.168.1.21", "username": "viewer", "password": "camera-password" }
+    ]
+  },
   "ewelink": {
     "name": "ewelink",
     "uniqueId": "ewelink",
